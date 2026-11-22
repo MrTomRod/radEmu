@@ -75,6 +75,7 @@
 #' @param tol_test_stat tolerance for relative changes in test statistic for stopping criteria. Default is `0.01`.
 #' @param tol_discrete tolerance for root mean norm of score vector for stopping criteria. Default is `0.01`.
 #' @param null_window window to use for stopping criteria (this many iterations where stopping criteria is met). Default is `5`.
+#' @param information_treatment `"identifiable"` or `"r_ladder"`: what to do if the information matrix is singular, see \code{\link{control_fn}}. Default (for this internal function) is `"r_ladder"`; `emuFit()` passes `"identifiable"`.
 #'
 #' @return A list containing elements `score_stat`, `pval`, `log_pval`,'niter`,
 #' `convergence`, `gap`, `u`, `rho`, `tau`, `inner_maxit`, `null_B`, and `Bs`. `score_stat` gives the 
@@ -127,7 +128,8 @@ score_test <- function(
   tol_lik = 1e-5,
   tol_test_stat = 0.01,
   tol_discrete = 0.01, 
-  null_window = 5
+  null_window = 5,
+  information_treatment = "r_ladder"
 ) {
   # get hyperparameters
   n <- nrow(Y)
@@ -405,7 +407,8 @@ retrying with smaller penalty scaling parameter tau and larger inner_maxit."
       p = p,
       I_inv = I_inv,
       Dy = Dy,
-      cluster = cluster
+      cluster = cluster,
+      information_treatment = information_treatment
     )
   )
   if (inherits(score_res, "try-error")) {
@@ -480,7 +483,8 @@ retrying with smaller penalty scaling parameter tau and larger inner_maxit."
         n = n,
         p = p,
         I_inv = NULL,
-        Dy = Dy
+        Dy = Dy,
+        information_treatment = information_treatment
       )
       if (inherits(score_res_with_null_info, "try-error")) {
         score_stat_with_null_info <- score_res_with_null_info

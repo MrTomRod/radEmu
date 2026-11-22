@@ -43,6 +43,12 @@
 #' problem). Default is `1e-5`.  
 #' @param ntries Used in estimation under the null hypothesis, for the augmented Lagrangian algorithm. 
 #' The number of times to try optimization. Successive tries will change \code{tau} and \code{inner_maxit} and retry.
+#' @param information_treatment What to do if the Fisher information matrix is (numerically) singular, which happens when
+#' the data do not identify some parameters (e.g. a category that is absent from a level of a factor, estimated without
+#' penalization). `"identifiable"` (default) inverts the information on the directions the data identify, and reports
+#' `NA` for a robust score statistic or Wald standard error of a quantity that depends on the others. `"r_ladder"`
+#' is the behavior of radEmu <= 2.4.0.0: the score test adds `lambda * max(diag(I))` to the diagonal, with
+#' `lambda = 1e-4, 1e-3, ...`; the Wald standard errors fail with an error.
 #'
 #' @return A list containing control options, to have more control over optimization algorithms used by `radEmu`. 
 #' This can be passed into `emuFit()`.
@@ -67,7 +73,8 @@ control_fn <- function(
     tau = 2,
     kappa = 0.8,
     constraint_tol = 1e-5,
-    ntries = 4
+    ntries = 4,
+    information_treatment = "identifiable"
     ) {
   
   default <- list(max_step = max_step,
@@ -87,7 +94,8 @@ control_fn <- function(
                   tau = tau,
                   kappa = kappa,
                   constraint_tol = constraint_tol,
-                  ntries = ntries)
+                  ntries = ntries,
+                  information_treatment = information_treatment)
   
   if (length(control) > 0) {
     unknown <- setdiff(names(control), names(default))

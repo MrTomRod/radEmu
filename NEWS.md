@@ -1,3 +1,7 @@
+# radEmu (development version)
+
+Singular Fisher information. If the data do not identify some parameters (for example a category that is absent from a level of a factor in an unpenalized fit, so that its coefficient runs towards the `max_abs_B` bound), the information matrix cannot be inverted reliably. Score tests used to add `lambda * max(diag(I))` to its diagonal (`lambda = 1e-4, 1e-3, ...`), so the statistic depended on `lambda` and on the reference category, and Wald standard errors failed with "computationally singular". Now (`control = control_fn(information_treatment = "identifiable")`, the default) the information is inverted on the directions the data identify, and the score statistic or Wald standard error of a quantity that depends on the others is `NA`. When nothing is singular, results are unchanged. `information_treatment = "r_ladder"` restores the previous behaviour.
+
 # radEmu 2.4.0.0
 
 This is a minor release with some speed-ups and additional flexibility. 

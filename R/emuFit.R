@@ -380,7 +380,8 @@ emuFit <- function(Y,
                                     nominal_coverage = 1 - alpha,
                                     verbose = (verbose == "development"),
                                     j_ref = j_ref,
-                                    cluster = cluster)
+                                    cluster = cluster,
+                                    information_treatment = control$information_treatment)
     
     coefficients <- just_wald_things$coefficients
     if (control$use_fullmodel_cov) {
@@ -599,7 +600,8 @@ emuFit <- function(Y,
                                 tol_lik = tol_lik,
                                 tol_test_stat = tol_test_stat,
                                 tol_discrete = tol_discrete,
-                                null_window = null_window)
+                                null_window = null_window,
+                                information_treatment = control$information_treatment)
       
       if (is.null(test_result)) {
         # Null estimation errored on every attempt, so mark down the reason why
