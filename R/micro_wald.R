@@ -13,7 +13,8 @@ micro_wald <- function(Y,
                        return_Dy = TRUE,
                        return_sandwich = FALSE,
                        j_ref = NULL,
-                       cluster = NULL){
+                       cluster = NULL,
+                       information_treatment = "r_ladder"){
   n <- nrow(Y)
   J <- ncol(Y)
   p <- ncol(X)
@@ -82,8 +83,20 @@ micro_wald <- function(Y,
   }
   
   #get a matrix whose crossproduct with itself is the sandwich covariance for B
-  half_rob_cov <- Matrix::t(Matrix::solve(I[-to_erase,-to_erase], Matrix::t(score_mat)[-to_erase,],
-                                          method = "cholmod_solve"))
+  # information_treatment = "identifiable": if the data do not identify some directions (a taxon absent from a
+  # group, ...), use the inverse of the information on the identified directions (see information_pinverse());
+  # contrasts that depend on the others are not estimable (NA). "r_ladder": the ordinary solve, which fails
+  # if the information is computationally singular.
+  pinv <- NULL
+  if (identical(information_treatment, "identifiable")) {
+    pinv <- information_pinverse(I, p, J, j_ref)
+  }
+  if (is.null(pinv)) {
+    half_rob_cov <- Matrix::t(Matrix::solve(I[-to_erase,-to_erase], Matrix::t(score_mat)[-to_erase,],
+                                            method = "cholmod_solve"))
+  } else {
+    half_rob_cov <- as.matrix(score_mat[, -to_erase, drop = FALSE]) %*% pinv$inverse
+  }
   
   #return to original parametrization
   for(k in 1:p){
@@ -116,6 +129,11 @@ micro_wald <- function(Y,
     H_cup <- B_cup_from_B(H)
     
     var_kj <- sum(as.numeric(as.matrix(half_rob_cov%*%H_cup)^2))
+    
+    if (!is.null(pinv) && isTRUE(pinv$unidentified_fraction(H_cup) > information_unidentified_tol)) {
+      # the contrast depends on directions the data do not identify: no standard error
+      var_kj <- NA_real_
+    }
     
     test_kj[s,"se"] <- sqrt(var_kj)
     
