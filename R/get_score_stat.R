@@ -15,7 +15,8 @@ get_score_stat <- function(Y,
                            p,
                            I_inv = NULL, #previously computed I_inv, if desired
                            Dy = NULL, #previously computed estimate of score covariance, if desired
-                           cluster = NULL #numeric vector giving cluster membership for GEE
+                           cluster = NULL, #numeric vector giving cluster membership for GEE
+                           information_treatment = "r_ladder" #what to do if the information is singular, see below
                            ){
   scores <- vector(n,mode = "list")
   
@@ -66,18 +67,35 @@ get_score_stat <- function(Y,
   
   B_cup <- B_cup_from_B(B)
   
+  I_inv_H <- NULL
+  unidentified <- NULL
   if (is.null(I_inv)) {
     
-    I <- f_info(Y, B_cup, B, X, X_cup)
+    I_full <- f_info(Y, B_cup, B, X, X_cup)
     
     #remove indexes corresponding to convenience constraint
-    I <- I[-indexes_to_remove, -indexes_to_remove]
+    I <- I_full[-indexes_to_remove, -indexes_to_remove]
+    
+    # -- information_treatment = "identifiable": if the data do not identify some directions (a taxon absent
+    #    from a group, ...), invert the information on the directions that are identified instead of
+    #    adding a ridge. A hypothesis that depends on the others is not testable (NA).
+    #    "r_ladder" (used by the optimisers inside the null fits): the lambda ladder below.
+    if (identical(information_treatment, "identifiable")) {
+      pinv <- information_pinverse(I_full, p, J, j_ref)
+      if (!is.null(pinv)) {
+        unidentified <- pinv$unidentified_fraction(H_cup)
+        if (!is.finite(unidentified) || unidentified <= information_unidentified_tol) {   # NaN: H = 0
+          I_inv_H <- pinv$inverse %*% H_cup
+        }
+        solve_ok <- TRUE
+      }
+    }
     
     # -- ensure info is invertible (lambda·diag trick)
     lambda <- 0
-    solve_ok <- FALSE
     scale <- max(abs(Matrix::diag(I)))
     repeat {
+      if (!is.null(unidentified)) break
       if (lambda > 0) {
         info_reg <- I +
           lambda *
@@ -105,6 +123,12 @@ get_score_stat <- function(Y,
     
     I_inv_H <- I_inv %*% H_cup
     
+  }
+  
+  if (!is.null(unidentified) && is.null(I_inv_H)) {
+    # H depends on directions the data do not identify: no statistic
+    return(list(score_stat = NA_real_, outside = NA_real_, inside = NA_real_, score = NULL,
+                unidentified_fraction = unidentified))
   }
   
   if (is.null(Dy)) {
