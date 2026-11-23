@@ -98,7 +98,7 @@ should fitting step be skipped (\code{FALSE}), e.g., if score tests are to be ru
 fitted model. Default is \code{TRUE}.}
 
 \item{tolerance}{tolerance for stopping criterion in estimation; once no element of B is updated by more than this value
-in a single step, we exit optimization. Defaults to \code{1e-3}. Used in estimation.}
+in a single step, we exit optimization. Defaults to \code{1e-4}. Used in estimation.}
 
 \item{maxit}{maximum number of outer iterations to perform before exiting optimization. Default is \code{1000}.
 Used in estimation.}

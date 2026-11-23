@@ -38,7 +38,7 @@
 #' should fitting step be skipped (`FALSE`), e.g., if score tests are to be run on an already
 #' fitted model. Default is `TRUE`.
 #' @param tolerance tolerance for stopping criterion in estimation; once no element of B is updated by more than this value 
-#' in a single step, we exit optimization. Defaults to `1e-3`. Used in estimation. 
+#' in a single step, we exit optimization. Defaults to `1e-4`. Used in estimation. 
 #' @param maxit maximum number of outer iterations to perform before exiting optimization. Default is `1000`.
 #' Used in estimation.
 #' @param alpha nominal type 1 error level to be used to construct confidence intervals. Default is `0.05`
