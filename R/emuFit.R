@@ -779,8 +779,14 @@ emuFit <- function(Y,
   }
   
   if (!is.null(zero_comparison_res)) {
-    coefficients <- dplyr::full_join(coefficients, zero_comparison_res, 
-                                     by = c("covariate", "category")) 
+    coef_cols <- names(coefficients)
+    coefficients$.row_order <- seq_len(nrow(coefficients))
+    coefficients <- merge(coefficients, zero_comparison_res,
+                          by = c("covariate", "category"),
+                          all = TRUE, sort = FALSE)
+    coefficients <- coefficients[order(coefficients$.row_order),
+                                 c(coef_cols, "zero_comparison")]
+    rownames(coefficients) <- NULL
     coefficients$zero_comparison[is.na(coefficients$zero_comparison)] <- FALSE
     
     if (remove_zero_comparison_pvals == TRUE | is.numeric(remove_zero_comparison_pvals)) {

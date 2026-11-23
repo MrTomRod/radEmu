@@ -139,3 +139,16 @@ test_that("no error when level with single samples", {
   expect_silent(emuRes <- emuFit(Y = Y[1:13, ], formula = form1, data = dat[1:13, ], 
                                  run_score_tests = FALSE, compute_cis = FALSE, match_row_names = FALSE))
 })
+
+test_that("zero_comparison join preserves row and column order", {
+  emuRes5 <- emuFit(Y = Y0, X = X5, run_score_tests = FALSE, compute_cis = FALSE,
+                    match_row_names = FALSE)
+  expect_equal(names(emuRes5$coef),
+               c("covariate", "category", "category_num", "estimate", "se",
+                 "lower", "upper", "score_stat", "pval", "zero_comparison"))
+  expect_equal(emuRes5$coef$covariate,
+               rep(colnames(X5)[-1], each = ncol(Y0)))
+  expect_equal(emuRes5$coef$category,
+               rep(colnames(Y0), times = ncol(X5) - 1))
+  expect_equal(rownames(emuRes5$coef), as.character(seq_len(nrow(emuRes5$coef))))
+})
