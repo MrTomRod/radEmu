@@ -49,6 +49,7 @@
 #' \code{"augmented_lagrangian"}, or \code{"discrete"} when design matrix only includes categorical covariates. 
 #' Default and recommended approach is \code{"constraint_sandwich"} or \code{"discrete"} when approach, 
 #' unless \code{J < 20}.
+#' @param penalize logical: should Firth penalty be used? Default is \code{TRUE}.
 #' 
 #' @return returns objects \code{Y}, \code{X}, \code{cluster}, and \code{B_null_list}, which may be modified by tests, and throw any useful
 #' errors, warnings, or messages.
@@ -71,7 +72,8 @@ emuFit_check <- function(Y,
                          constraint_grad_fn,
                          constraint_param,
                          run_score_tests = TRUE,
-                         null_fit_alg = "constraint_sandwich") {
+                         null_fit_alg = "constraint_sandwich",
+                         penalize = TRUE) {
   
   # confirm that input to verbose is valid
   if (!(verbose %in% c(FALSE, TRUE, "development"))) {
@@ -220,6 +222,26 @@ have no observations. These samples must be excluded before fitting model.")
     if (min(colSums(Y)) == 0) {
       stop("Some columns of Y consist entirely of zeroes, meaning that some categories have zero counts for all samples. These
          categories must be excluded before fitting the model.")
+    }
+  }
+  
+  if (isTRUE(penalize)) {
+    # Thresholds on the median nonzero entry of Y for flagging inputs far from
+    # count scale (coverage/proportions below 1, or rescaled values above 1e5).
+    scale_min_median <- 1
+    scale_max_median <- 1e5
+    nz <- Y[!is.na(Y) & Y > 0]
+    if (length(nz) > 0) {
+      med_nz <- stats::median(nz)
+      is_integer_valued <- all(nz == floor(nz))
+      if ((!is_integer_valued && med_nz < scale_min_median) || med_nz > scale_max_median) {
+        warning(
+          "Nonzero values of Y have median ", signif(med_nz, 3),
+          ", which appears far from count scale. ",
+          "The Firth penalty depends on the scale of Y. ",
+          "Supply counts, or convert coverage to counts (coverage * length / read length); see ?emuFit."
+        )
+      }
     }
   }
   

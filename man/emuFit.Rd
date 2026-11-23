@@ -44,7 +44,7 @@ emuFit(
 )
 }
 \arguments{
-\item{Y}{an n x J matrix or dataframe of nonnegative observations, or a \code{phyloseq} or \code{TreeSummarizedExperiment} object containing an otu table and sample data.}
+\item{Y}{an n x J matrix or dataframe of nonnegative observations (ideally on a count scale; see Details), or a \code{phyloseq} or \code{TreeSummarizedExperiment} object containing an otu table and sample data.}
 
 \item{X}{an n x p design matrix (either provide \code{X} or \code{data} and \code{formula})}
 
@@ -200,6 +200,11 @@ including whether or not the algorithm converged, which can be helpful for debug
 }
 \description{
 Fit radEmu model
+}
+\details{
+When \code{penalize = TRUE} (the default), the Firth penalty adds an augmentation of at most \code{0.5} to each cell of \code{Y} in \code{Y}'s own units.
+Consequently, the penalty behaves as intended when \code{Y} is on a count scale, whereas inputs on much smaller scales (such as coverage or relative abundances with most nonzero values below 1) can be dominated by the penalty and inputs on much larger scales (such as values rescaled by \code{1e5} or more) weaken the penalty on separated categories.
+For coverage-type data, supply approximate counts (e.g., \code{coverage * length / read_length}) before calling \code{emuFit()}.
 }
 \examples{
 # data frame example (for phyloseq and TreeSummarizedExperiment examples, see the vignettes)

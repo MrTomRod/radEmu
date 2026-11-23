@@ -1,6 +1,6 @@
 #' Fit radEmu model
 #'
-#' @param Y an n x J matrix or dataframe of nonnegative observations, or a `phyloseq` or `TreeSummarizedExperiment` object containing an otu table and sample data.
+#' @param Y an n x J matrix or dataframe of nonnegative observations (ideally on a count scale; see Details), or a `phyloseq` or `TreeSummarizedExperiment` object containing an otu table and sample data.
 #' @param X an n x p design matrix (either provide \code{X} or \code{data} and \code{formula})
 #' @param formula a one-sided formula specifying the form of the mean model to be fit (used with \code{data})
 #' @param data an n x p data frame containing variables given in \code{formula}
@@ -87,6 +87,11 @@
 #' @param control A list of control parameters, to have more control over estimation and hypothesis testing. See \code{control_fn} for details.
 #' @param ... Additional arguments. Arguments matching the names of \code{control_fn()} options are forwarded to that function and override
 #' defaults. Unknown arguments are ignored with a warning.
+#' 
+#' @details
+#' When `penalize = TRUE` (the default), the Firth penalty adds an augmentation of at most `0.5` to each cell of `Y` in `Y`'s own units.
+#' Consequently, the penalty behaves as intended when `Y` is on a count scale, whereas inputs on much smaller scales (such as coverage or relative abundances with most nonzero values below 1) can be dominated by the penalty and inputs on much larger scales (such as values rescaled by `1e5` or more) weaken the penalty on separated categories.
+#' For coverage-type data, supply approximate counts (e.g., `coverage * length / read_length`) before calling `emuFit()`.
 #' 
 #' @return \code{emuFit} returns a list containing elements \code{coef}, \code{B}, \code{penalized}, \code{Y_augmented},
 #' \code{z_hat}, \code{I}, \code{Dy}, and \code{score_test_hyperparams} if score tests are run.  
@@ -221,7 +226,8 @@ emuFit <- function(Y,
                                 constraint_grad_fn = constraint_grad_fn,
                                 constraint_param = constraint_param,
                                 run_score_tests = run_score_tests,
-                                null_fit_alg = null_fit_alg)
+                                null_fit_alg = null_fit_alg,
+                                penalize = penalize)
   
   Y <- check_results$Y
   X <- check_results$X

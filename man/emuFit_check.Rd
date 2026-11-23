@@ -21,7 +21,8 @@ emuFit_check(
   constraint_grad_fn,
   constraint_param,
   run_score_tests = TRUE,
-  null_fit_alg = "constraint_sandwich"
+  null_fit_alg = "constraint_sandwich",
+  penalize = TRUE
 )
 }
 \arguments{
@@ -90,6 +91,8 @@ the minimizer of the pseudo-Huber loss approaches the median.)}
 \code{"augmented_lagrangian"}, or \code{"discrete"} when design matrix only includes categorical covariates.
 Default and recommended approach is \code{"constraint_sandwich"} or \code{"discrete"} when approach,
 unless \code{J < 20}.}
+
+\item{penalize}{logical: should Firth penalty be used? Default is \code{TRUE}.}
 }
 \value{
 returns objects \code{Y}, \code{X}, \code{cluster}, and \code{B_null_list}, which may be modified by tests, and throw any useful

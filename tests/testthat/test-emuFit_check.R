@@ -64,4 +64,35 @@ test_that("negative values in Y throw an error", {
   )
 })
 
+test_that("penalized emuFit warns when Y is far from count scale", {
+  # Ordinary integer counts: no warning
+  expect_no_warning(
+    emuFit(Y = Y, X = X, run_score_tests = FALSE, compute_cis = FALSE)
+  )
+
+  # Coverage-scale non-integer Y (median nonzero < 1): warns when penalize = TRUE
+  Y_cov <- Y / max(Y) * 0.5
+  expect_warning(
+    emuFit(Y = Y_cov, X = X, run_score_tests = FALSE, compute_cis = FALSE),
+    "Firth penalty depends on the scale of Y",
+    fixed = TRUE
+  )
+
+  # Very large Y (median nonzero > 1e5): warns when penalize = TRUE
+  Y_big <- Y * 1e6
+  expect_warning(
+    emuFit(Y = Y_big, X = X, run_score_tests = FALSE, compute_cis = FALSE),
+    "Firth penalty depends on the scale of Y",
+    fixed = TRUE
+  )
+
+  # Unpenalized fit: no scale warning for small or large Y
+  expect_no_warning(
+    emuFit(Y = Y_cov, X = X, penalize = FALSE, run_score_tests = FALSE, compute_cis = FALSE)
+  )
+  expect_no_warning(
+    emuFit(Y = Y_big, X = X, penalize = FALSE, run_score_tests = FALSE, compute_cis = FALSE)
+  )
+})
+
   
