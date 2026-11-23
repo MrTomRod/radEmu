@@ -35,7 +35,11 @@ score_test(
   tol_lik = 1e-05,
   tol_test_stat = 0.01,
   tol_discrete = 0.01,
-  null_window = 5
+  null_window = 5,
+  max_abs_B = 250,
+  multistart_tol_kkt = 1e-09,
+  multistart_sheets = 8,
+  multistart_search_width = 3
 )
 }
 \arguments{
@@ -131,6 +135,14 @@ Y are treated as independent.}
 \item{tol_discrete}{tolerance for root mean norm of score vector for stopping criteria. Default is \code{0.01}.}
 
 \item{null_window}{window to use for stopping criteria (this many iterations where stopping criteria is met). Default is \code{5}.}
+
+\item{max_abs_B}{numeric: maximum allowed absolute value of entries in \code{B} during null estimation. Default is \code{250}.}
+
+\item{multistart_tol_kkt}{numeric: KKT tolerance for \code{fit_null_multistart()}. Default is \code{1e-9}.}
+
+\item{multistart_sheets}{integer: number of dynamic-programming sheet candidates for \code{fit_null_multistart()}. Default is \code{8}.}
+
+\item{multistart_search_width}{integer: exchange-search width for \code{fit_null_multistart()}. Default is \code{3}.}
 }
 \value{
 A list containing elements \code{score_stat}, \code{pval}, \code{log_pval},'niter\verb{, }convergence\verb{, }gap\verb{, }u\verb{, }rho\verb{, }tau\verb{, }inner_maxit\verb{, }null_B\verb{, and }Bs\code{. }score_stat\verb{gives the  value of the robust score statistic for $H_0: B_\{k_constr,j_constr\} = g(B_\{k_constr\})$.}pval\code{and}log_pval\verb{are the p-value (on natural and log scales) corresponding to the score statistic (log_pval may be useful when the p-value is very close to zero). }gap\verb{is the final value of $g(B_\{k_constr\}) - B_\{k_constr, j_constr\}$ obtained in  optimization under the null.}u\code{and}rho\verb{are final values of augmented  Lagrangian parameters returned by null fitting algorithm.}tau\verb{is the final value of}tau\verb{that  is used to update the}rho\verb{values and}inner_maxit\verb{is the final maximum number of iterations for  the inner optimization loop in optimization under the null, in which B and z parameter values are maximized for specific}u\code{and}rho\code{parameters.}null_B\verb{is the value of  B returned but the null fitting algorithm.}Bs\verb{is by default}NULL\verb{; if }trackB = TRUE\verb{, }Bs` is a data frame containing values of B by outcome category, covariate, and

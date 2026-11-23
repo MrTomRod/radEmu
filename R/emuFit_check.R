@@ -45,9 +45,10 @@
 #' (Limit as \code{constraint_param} approaches infinity is the mean; as this parameter approaches zero,
 #' the minimizer of the pseudo-Huber loss approaches the median.)
 #' @param run_score_tests logical: perform robust score testing? 
-#' @param null_fit_alg Which null fitting algorithm to use for score tests: \code{"constraint_sandwich"} or 
-#' \code{"augmented_lagrangian"}, or \code{"discrete"} when design matrix only includes categorical covariates. 
-#' Default and recommended approach is \code{"constraint_sandwich"} or \code{"discrete"} when approach, 
+#' @param null_fit_alg Which null fitting algorithm to use for score tests: \code{"constraint_sandwich"},
+#' \code{"augmented_lagrangian"}, \code{"discrete"} (when design matrix only includes categorical covariates),
+#' or \code{"multistart"} (multi-start exact reduced damped-Newton solver).
+#' Default and recommended approach is \code{"constraint_sandwich"} or \code{"discrete"} when appropriate,
 #' unless \code{J < 20}.
 #' 
 #' @return returns objects \code{Y}, \code{X}, \code{cluster}, and \code{B_null_list}, which may be modified by tests, and throw any useful
@@ -385,8 +386,8 @@ ignoring argument 'cluster'.")
  
   # check that an appropriate null_fit_alg is given
   if (!is.null(null_fit_alg)) {
-    if (!(null_fit_alg %in% c("constraint_sandwich", "augmented_lagrangian", "discrete"))) {
-      stop("The options for `null_fit_alg` are 'constraint_sandwich', 'augmented_lagrangian', or 'discrete'.")
+    if (!(null_fit_alg %in% c("constraint_sandwich", "augmented_lagrangian", "discrete", "multistart"))) {
+      stop("The options for `null_fit_alg` are 'constraint_sandwich', 'augmented_lagrangian', 'discrete', or 'multistart'.")
     }
   }
   

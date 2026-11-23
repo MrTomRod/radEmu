@@ -86,9 +86,10 @@ the minimizer of the pseudo-Huber loss approaches the median.)}
 
 \item{run_score_tests}{logical: perform robust score testing?}
 
-\item{null_fit_alg}{Which null fitting algorithm to use for score tests: \code{"constraint_sandwich"} or
-\code{"augmented_lagrangian"}, or \code{"discrete"} when design matrix only includes categorical covariates.
-Default and recommended approach is \code{"constraint_sandwich"} or \code{"discrete"} when approach,
+\item{null_fit_alg}{Which null fitting algorithm to use for score tests: \code{"constraint_sandwich"},
+\code{"augmented_lagrangian"}, \code{"discrete"} (when design matrix only includes categorical covariates),
+or \code{"multistart"} (multi-start exact reduced damped-Newton solver).
+Default and recommended approach is \code{"constraint_sandwich"} or \code{"discrete"} when appropriate,
 unless \code{J < 20}.}
 }
 \value{

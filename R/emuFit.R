@@ -56,10 +56,12 @@
 #' would like to test, run the function \code{radEmu::make_design_matrix()} in order to view the design matrix,
 #' and identify which column of the design matrix corresponds to each covariate in your model. This argument 
 #' is required when running score tests.
-#' @param null_fit_alg Which null fitting algorithm to use for score tests: \code{"constraint_sandwich"} or 
-#' \code{"augmented_lagrangian"}, or \code{"discrete"} when design matrix only includes categorical covariates. 
+#' @param null_fit_alg Which null fitting algorithm to use for score tests: \code{"constraint_sandwich"},
+#' \code{"augmented_lagrangian"}, \code{"discrete"} (when design matrix only includes categorical covariates),
+#' or \code{"multistart"} (multi-start exact reduced damped-Newton solver, which searches across multiple
+#' starting points for non-convex pseudo-Huber constraints to avoid worse local optima).
 #' Default and recommended approach is \code{"constraint_sandwich"}, or \code{"discrete"} for a design matrix with
-#' only categorical covariates and \code{J < 150}. Augmented lagrangian is used when \code{J < 20}. 
+#' only categorical covariates and \code{J < 150}. Augmented lagrangian is used by default when \code{J < 20}.
 #' @param B_null_list list of starting values of coefficient matrix (p x J) for null estimation for score testing. This should either 
 #' be a list with the same length as \code{test_kj}. If you only want to provide starting values for some tests,
 #' include the other elements of the list as \code{NULL}.
@@ -234,7 +236,7 @@ emuFit <- function(Y,
   
   n <- nrow(Y)
   J <- ncol(Y)
-  if (J < 20) {
+  if (J < 20 && !identical(null_fit_alg, "multistart")) {
     null_fit_alg <- "augmented_lagrangian"
   }
   p <- ncol(X)
@@ -549,6 +551,12 @@ emuFit <- function(Y,
         attr(constraint_fn[[k]], "constraint_type") <- "other"
       }
     }
+    if (null_fit_alg == "multistart") {
+      for (k in unique(test_kj$k)) {
+        spec_k <- classify_null_constraint(constraint_fn[[k]], constraint_grad_fn[[k]], J, 1L)
+        attr(constraint_fn[[k]], "constraint_type") <- if (spec_k$kind == "other") "other" else "multistart"
+      }
+    }
     
     for(test_ind in 1:nrow(test_kj)) {
       
@@ -599,7 +607,11 @@ emuFit <- function(Y,
                                 tol_lik = tol_lik,
                                 tol_test_stat = tol_test_stat,
                                 tol_discrete = tol_discrete,
-                                null_window = null_window)
+                                null_window = null_window,
+                                max_abs_B = max_abs_B,
+                                multistart_tol_kkt = control$multistart_tol_kkt,
+                                multistart_sheets = control$multistart_sheets,
+                                multistart_search_width = control$multistart_search_width)
       
       if (is.null(test_result)) {
         # Null estimation errored on every attempt, so mark down the reason why

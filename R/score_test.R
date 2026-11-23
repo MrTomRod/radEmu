@@ -75,6 +75,10 @@
 #' @param tol_test_stat tolerance for relative changes in test statistic for stopping criteria. Default is `0.01`.
 #' @param tol_discrete tolerance for root mean norm of score vector for stopping criteria. Default is `0.01`.
 #' @param null_window window to use for stopping criteria (this many iterations where stopping criteria is met). Default is `5`.
+#' @param max_abs_B numeric: maximum allowed absolute value of entries in \code{B} during null estimation. Default is \code{250}.
+#' @param multistart_tol_kkt numeric: KKT tolerance for \code{fit_null_multistart()}. Default is \code{1e-9}.
+#' @param multistart_sheets integer: number of dynamic-programming sheet candidates for \code{fit_null_multistart()}. Default is \code{8}.
+#' @param multistart_search_width integer: exchange-search width for \code{fit_null_multistart()}. Default is \code{3}.
 #'
 #' @return A list containing elements `score_stat`, `pval`, `log_pval`,'niter`,
 #' `convergence`, `gap`, `u`, `rho`, `tau`, `inner_maxit`, `null_B`, and `Bs`. `score_stat` gives the 
@@ -127,7 +131,11 @@ score_test <- function(
   tol_lik = 1e-5,
   tol_test_stat = 0.01,
   tol_discrete = 0.01, 
-  null_window = 5
+  null_window = 5,
+  max_abs_B = 250,
+  multistart_tol_kkt = 1e-9,
+  multistart_sheets = 8,
+  multistart_search_width = 3
 ) {
   # get hyperparameters
   n <- nrow(Y)
@@ -141,11 +149,11 @@ score_test <- function(
   constraint_type <- attr(constraint_fn[[k_constr]], "constraint_type")
   if (!(constraint_type %in% c("other", "symmetric:mean", "symmetric_subset:mean", "scc",
                                "symmetric:pseudohuber", "symmetric_subset:pseudohuber",
-                               "discrete:mean", "discrete:pseudohuber"))) {
+                               "discrete:mean", "discrete:pseudohuber", "multistart"))) {
     stop(
       "The attribute 'constraint_type' for `constraint_fn[[k_constr]]` must either be omitted, or must be either
          `scc` for single category constraint, `symmetric:mean` or `symmetric:pseudohuber` for symmetric functions such
-         as mean or pseudo-Huber median, `symmetric_subset:mean` or `symmetric_subset:pseudohuber` for symmetric functions over a subset, or `other`."
+         as mean or pseudo-Huber median, `symmetric_subset:mean` or `symmetric_subset:pseudohuber` for symmetric functions over a subset, `multistart`, or `other`."
     )
   }
   
@@ -268,6 +276,38 @@ score_test <- function(
     }
   }
   
+  if (constraint_type == "multistart") {
+    constrained_fit <- try(fit_null_multistart(
+      B = B,
+      Y = Y,
+      X = X,
+      k_constr = k_constr,
+      j_constr = j_constr,
+      j_ref = j_ref,
+      constraint_fn = constraint_fn,
+      constraint_grad_fn = constraint_grad_fn,
+      tol_kkt = multistart_tol_kkt,
+      c1 = c1,
+      maxit = maxit,
+      max_abs_B = max_abs_B,
+      sheets = multistart_sheets,
+      search_width = multistart_search_width,
+      verbose = verbose,
+      trackB = trackB
+    ))
+
+    if (!inherits(constrained_fit, "try-error")) {
+      if (constrained_fit$converged) {
+        accept_try <- TRUE
+        good_enough_fit <- TRUE
+      } else {
+        message("Multistart algorithm for estimation under the null hypothesis did not converge. Trying again with augmented Lagrangian algorithm.")
+      }
+    } else {
+      message("Multistart algorithm for estimation under the null hypothesis failed. Trying again with augmented Lagrangian algorithm.")
+    }
+  }
+
   while (!accept_try) {
     #fit under null
     # !accept try if constraint_type is other or scc (in which case we want to call fit_null()) or if we
@@ -551,7 +591,7 @@ retrying with smaller penalty scaling parameter tau and larger inner_maxit."
     }
   }
   
-  if (null_diagnostic_plots) {
+  if (null_diagnostic_plots && !is.null(constrained_fit$it_df)) {
     constrained_fit$j <- j_constr
     constrained_fit$k <- k_constr
     res$diagnostics <- list(diagnostics_df = constrained_fit$it_df)

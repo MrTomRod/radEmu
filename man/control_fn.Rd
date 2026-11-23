@@ -23,7 +23,10 @@ control_fn(
   tau = 2,
   kappa = 0.8,
   constraint_tol = 1e-05,
-  ntries = 4
+  ntries = 4,
+  multistart_tol_kkt = 1e-09,
+  multistart_sheets = 8,
+  multistart_search_width = 3
 )
 }
 \arguments{
@@ -88,6 +91,15 @@ problem). Default is \code{1e-5}.}
 
 \item{ntries}{Used in estimation under the null hypothesis, for the augmented Lagrangian algorithm.
 The number of times to try optimization. Successive tries will change \code{tau} and \code{inner_maxit} and retry.}
+
+\item{multistart_tol_kkt}{Used in estimation under the null hypothesis, for the \code{"multistart"} algorithm.
+Stopping tolerance on the scaled reduced Gauss-Newton decrement. Default is \code{1e-9}.}
+
+\item{multistart_sheets}{Used in estimation under the null hypothesis, for the \code{"multistart"} algorithm.
+Number of distinct dynamic-programming sheet candidates to polish for pseudo-Huber constraints (0 to disable). Default is \code{8}.}
+
+\item{multistart_search_width}{Used in estimation under the null hypothesis, for the \code{"multistart"} algorithm.
+Number of nearest categories below and above \eqn{B_{k,j}} considered in each round of the exchange search (0 to disable). Default is \code{3}.}
 }
 \value{
 A list containing control options, to have more control over optimization algorithms used by \code{radEmu}.
