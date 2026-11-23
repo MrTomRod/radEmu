@@ -242,10 +242,10 @@ emuFit <- function(Y,
   # check for zero-comparison parameters
   zero_comparison_res <- zero_comparison_check(X = X, Y = Y)
   
-  # expanded design matrix, needed for confidence intervals and score tests
+  # expanded design matrix, needed for confidence intervals, Wald p-values, and score tests
   # (emuFit_micro_penalized constructs it when needed for estimation)
   X_cup <- NULL
-  if (compute_cis | run_score_tests) {
+  if (compute_cis | return_wald_p | run_score_tests) {
     X_cup <- X_cup_from_X_fast(X,J)
   }
   
@@ -383,6 +383,10 @@ emuFit <- function(Y,
                                     cluster = cluster)
     
     coefficients <- just_wald_things$coefficients
+    if (!compute_cis) {
+      coefficients$lower <- NA
+      coefficients$upper <- NA
+    }
     if (control$use_fullmodel_cov) {
       I <- just_wald_things$I
       Dy <- just_wald_things$Dy
