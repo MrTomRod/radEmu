@@ -1096,3 +1096,49 @@ describe("numerical failure handling in fit_null_discrete_micro_fs", {
     })
   })
 })
+
+test_that("discrete null fits converge when Y is rescaled far above count scale", {
+  # The stopping criterion is on the score, which is measured in units of Y, so
+  # an absolute tolerance becomes unattainable when Y is multiplied by a large
+  # constant: the root mean score then stalls at the floating-point resolution of
+  # the log-likelihood and the line search fails, even though the fit is converged.
+  set.seed(4242)
+  n <- 10
+  J <- 20
+  X <- cbind(intercept = 1, group = rep(0:1, each = n / 2))
+  b0 <- radEmu:::get_sim_bs(J)$b0
+  b1 <- rep(0, J)
+  b1[J - 2] <- 2.5
+  b1[3] <- -2.5
+  Y <- radEmu:::simulate_data(n = n, J = J, X = X, b0 = b0, b1 = b1,
+                              distn = "ZINB", zinb_size = 5, zinb_zero_prop = 0.6,
+                              mean_z = 5)
+  rownames(X) <- rownames(Y) <- paste0("s", seq_len(n))
+  Y <- Y[, colSums(Y) > 0, drop = FALSE]
+  J <- ncol(Y)
+
+  fit_counts <- suppressWarnings(emuFit(Y = Y, X = X, run_score_tests = FALSE,
+                                        compute_cis = FALSE))
+  # x1e6 also triggers the count-scale warning (see emuFit_check)
+  fit_large <- suppressWarnings(emuFit(Y = Y * 1e6, X = X, run_score_tests = FALSE,
+                                       compute_cis = FALSE))
+  expect_gt(mean(rowSums(fit_large$Y_augmented)), 1e9)
+
+  for (j in c(2, J - 1, J)) {
+    null_counts <- suppressMessages(fit_null_discrete(
+      Y = fit_counts$Y_augmented, X = X, k_constr = 2, j_constr = j, j_ref = J,
+      maxit = 1000, tol = 0.01))
+    null_large <- suppressMessages(fit_null_discrete(
+      Y = fit_large$Y_augmented, X = X, k_constr = 2, j_constr = j, j_ref = J,
+      maxit = 1000, tol = 0.01))
+    # the estimates themselves differ between the two scales because the Firth
+    # augmentation is a fixed amount in Y's units, but both fits must converge
+    expect_true(null_counts$converged)
+    expect_true(null_large$converged)
+    expect_lt(null_large$niter, 1000)
+    expect_true(all(is.finite(null_large$B)))
+    # the symmetric constraint still holds on the free entries (j_ref is 0)
+    expect_equal(null_large$B[2, j],
+                 pseudohuber_median(null_large$B[2, -j]))
+  }
+})

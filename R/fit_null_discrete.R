@@ -7,8 +7,11 @@
 #' @param j_ref column index of convenience constraint
 #' @param trackB track value of beta across iterations and return? Default is `FALSE`.
 #' @param maxit maximum iterations. Default is `5000`.
-#' @param tol tolerance for stopping criteria. Algorithm stops when the root mean of the
-#' norm of the score vector is less than the tolerance. Default is `0.01`.
+#' @param tol tolerance for stopping criteria. The algorithm stops when the root mean of the
+#' norm of the score vector is less than this tolerance. Because the score is measured in units of
+#' \code{Y}, values much smaller than \code{sqrt(.Machine$double.eps) * mean(group total)} are
+#' treated as converged, so that the criterion remains attainable when \code{Y} is on a much larger
+#' scale. Default is `0.01`.
 #' @param verbose should the algorithm print updates for you? Default is `FALSE`.
 #' @param ls_max maximum number of iterations in  the line search. Default is `20`. 
 #' @param ls_rho scaling factor in the line search. Default is `0.5`.

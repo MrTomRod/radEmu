@@ -25,6 +25,13 @@ fit_null_discrete_micro_fs <- function(Y, X,
   
   n <- rowSums(Y)
   
+  # The score is measured in units of Y, so its absolute magnitude is only
+  # meaningful relative to the scale of the data. Once it is below roughly
+  # sqrt(.Machine$double.eps) of the mean group total, the log-likelihood can no
+  # longer resolve further improvement: the steps become erratic and the line
+  # search can fail spuriously (observed for overall scales of 1e6 and above).
+  score_tol <- max(tol, sqrt(.Machine$double.eps) * mean(n))
+  
   # data frame to hold results
   it_df <- data.frame(it = 1:maxit,
                       lik = NA,
@@ -114,7 +121,7 @@ fit_null_discrete_micro_fs <- function(Y, X,
       message("root mean score norm = ", round(score_rms, 3))
     }
     
-    if (score_rms < tol) { final_iter <- iter - 1L; break }
+    if (score_rms < score_tol) { final_iter <- iter - 1L; break }
     
     # Fisher J in full phi = (alpha, vec(beta rows 1..p-1 each length m))
     q_dim <- m + (p - 1L) * m
