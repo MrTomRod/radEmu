@@ -1096,3 +1096,102 @@ describe("numerical failure handling in fit_null_discrete_micro_fs", {
     })
   })
 })
+
+test_that("subset pseudo-Huber constraint on a discrete design is honoured", {
+  set.seed(5)
+  n <- 30
+  J <- 25
+  grp <- rep(0:1, each = n / 2)
+  Y <- matrix(
+    rpois(
+      n * J,
+      rep(exp(rnorm(J, 3, 0.7)), each = n) *
+        ifelse(grp == 1, exp(rep(c(rnorm(12, 0, 0.1), rnorm(J - 12, 1, 0.8)), each = n)), 1)
+    ),
+    n,
+    J,
+    dimnames = list(NULL, paste0("cat", 1:J))
+  )
+  X <- cbind(`(Intercept)` = 1, g = grp)
+  rs <- 1:12
+  j <- 20
+
+  f_sub <- function(x) pseudohuber_median(x[rs])
+  f_sub_attr <- f_sub
+  attr(f_sub_attr, "reference_set") <- rs
+  g_sub <- function(x) {
+    gr <- rep(0, length(x))
+    gr[rs] <- dpseudohuber_median_dx(x[rs])
+    gr
+  }
+
+  cf_attr <- list(function(x) pseudohuber_median(x), f_sub_attr)
+  cf_noattr <- list(function(x) pseudohuber_median(x), f_sub)
+  cg <- list(function(x) dpseudohuber_median_dx(x), g_sub)
+
+  fit_al <- suppressMessages(emuFit(
+    Y = Y, X = X, test_kj = data.frame(k = 2, j = j),
+    constraint_fn = cf_attr, constraint_grad_fn = cg,
+    null_fit_alg = "augmented_lagrangian", return_nullB = TRUE,
+    match_row_names = FALSE
+  ))
+  fit_def_attr <- suppressMessages(emuFit(
+    Y = Y, X = X, test_kj = data.frame(k = 2, j = j),
+    constraint_fn = cf_attr, constraint_grad_fn = cg,
+    return_nullB = TRUE, match_row_names = FALSE
+  ))
+  fit_def_noattr <- suppressMessages(emuFit(
+    Y = Y, X = X, test_kj = data.frame(k = 2, j = j),
+    constraint_fn = cf_noattr, constraint_grad_fn = cg,
+    return_nullB = TRUE, match_row_names = FALSE
+  ))
+
+  row_j <- fit_al$coef$covariate == "g" & fit_al$coef$category == paste0("cat", j)
+  for (fit_def in list(fit_def_attr, fit_def_noattr)) {
+    B_null <- fit_def$null_B[[1]]
+    expect_lt(abs(B_null[2, j] - pseudohuber_median(B_null[2, rs])), 1e-4)
+    expect_gt(abs(B_null[2, j] - pseudohuber_median(B_null[2, ])), 1e-3)
+    expect_equal(
+      fit_def$coef$score_stat[row_j],
+      fit_al$coef$score_stat[row_j],
+      tolerance = 1e-6
+    )
+    expect_equal(
+      fit_def$coef$pval[row_j],
+      fit_al$coef$pval[row_j],
+      tolerance = 1e-6
+    )
+  }
+})
+
+test_that("all-taxa pseudo-Huber on a discrete design still uses fit_null_discrete", {
+  set.seed(5)
+  n <- 30
+  J <- 25
+  grp <- rep(0:1, each = n / 2)
+  Y <- matrix(rpois(n * J, lambda = 20), n, J) + 1
+  X <- cbind(`(Intercept)` = 1, g = grp)
+
+  discrete_calls <- 0L
+  real_discrete <- fit_null_discrete
+  local_mocked_bindings(
+    fit_null_discrete = function(...) {
+      discrete_calls <<- discrete_calls + 1L
+      real_discrete(...)
+    }
+  )
+
+  fit_default <- suppressMessages(emuFit(
+    Y = Y, X = X, test_kj = data.frame(k = 2, j = 5),
+    return_nullB = TRUE, match_row_names = FALSE
+  ))
+  expect_equal(discrete_calls, 1L)
+
+  fit_explicit <- suppressMessages(emuFit(
+    Y = Y, X = X, test_kj = data.frame(k = 2, j = 5),
+    null_fit_alg = "discrete", return_nullB = TRUE, match_row_names = FALSE
+  ))
+  expect_equal(discrete_calls, 2L)
+  expect_equal(fit_default$coef$score_stat[5], fit_explicit$coef$score_stat[5])
+  expect_equal(fit_default$null_B[[1]], fit_explicit$null_B[[1]])
+})
