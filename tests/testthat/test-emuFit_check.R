@@ -54,4 +54,14 @@ test_that("when k in test_kj is a string it works", {
   expect_true(sum(!(is.na(res3$coef$score_stat))) == 3)
 })
 
+test_that("negative values in Y throw an error", {
+  Y_neg <- Y
+  Y_neg[2, 3] <- -1
+  expect_error(
+    emuFit(Y = Y_neg, X = X, run_score_tests = FALSE),
+    "Y contains negative values",
+    fixed = TRUE
+  )
+})
+
   

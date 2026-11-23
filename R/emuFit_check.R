@@ -207,6 +207,10 @@ covariates in formula must be provided.")
     colnames(Y) <- paste0("category_", 1:J)
   }
   
+  if (any(Y < 0, na.rm = TRUE)) {
+    stop("Y contains negative values. All entries of Y must be nonnegative abundances or counts (e.g., not CLR- or log-ratio-transformed).")
+  }
+  
   if (min(rowSums(Y))==0) {
     stop("Some rows of Y consist entirely of zeroes, meaning that some samples
 have no observations. These samples must be excluded before fitting model.")
