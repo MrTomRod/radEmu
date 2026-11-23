@@ -472,14 +472,18 @@ emuFit <- function(Y,
       distinct_xx <- unique(X)
       if (all(X[, 1] == 1) & ncol(X) == nrow(distinct_xx)) {
         for (k in unique(test_kj$k)) {
-          # check if symmetric or symmetric subset
-          v3 <- rnorm(J)
-          if (isTRUE(all.equal(constraint_fn[[k]](v3), mean(v3)))) {
-            constraint_type <- "discrete:mean"
-          } else if (any(grepl("pseudohuber_median", deparse(body(constraint_fn[[k]]))))) {
-            constraint_type <- "discrete:pseudohuber"
-          } else {
+          # fit_null_discrete only supports all-category mean or pseudo-Huber (d = 0.1)
+          if (!is.null(attr(constraint_fn[[k]], "reference_set"))) {
             constraint_type <- "other"
+          } else {
+            v3 <- rnorm(J)
+            if (isTRUE(all.equal(constraint_fn[[k]](v3), mean(v3)))) {
+              constraint_type <- "discrete:mean"
+            } else if (isTRUE(all.equal(constraint_fn[[k]](v3), pseudohuber_median(v3, d = 0.1)))) {
+              constraint_type <- "discrete:pseudohuber"
+            } else {
+              constraint_type <- "other"
+            }
           }
           attr(constraint_fn[[k]], "constraint_type") <- constraint_type
         }
