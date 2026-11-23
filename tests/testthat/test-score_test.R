@@ -205,6 +205,45 @@ test_that("if fit_null errors on every attempt, emuFit reports NA and marks the 
   expect_equal(full$null_estimation_unconverged$j, 1:2)
 })
 
+test_that("discrete null fallback message names the discrete algorithm", {
+  dat <- make_fit_null_error_data()
+  X <- dat$X
+  Y <- dat$Y
+  J <- dat$J
+  fit <- suppressMessages(
+    emuFit(Y = Y, X = X, run_score_tests = FALSE, verbose = FALSE)
+  )
+  c_fn <- rep(list(mean), 2)
+  attr(c_fn[[2]], "constraint_type") <- "discrete:mean"
+  c_grad <- rep(list(function(x) rep(1 / length(x), length(x))), 2)
+
+  local_mocked_bindings(
+    fit_null_discrete = function(...) list(converged = FALSE),
+    fit_null = function(...) stop("stop after fallback")
+  )
+  expect_message(
+    suppressWarnings(without_try_output(score_test(
+      B = fit$B, Y = fit$Y_augmented, X = X, X_cup = X_cup_from_X_fast(X, J),
+      k_constr = 2, j_constr = 1, j_ref = J, ntries = 1,
+      constraint_fn = c_fn, constraint_grad_fn = c_grad
+    ))),
+    "Discrete algorithm for estimation under the null hypothesis did not converge"
+  )
+
+  local_mocked_bindings(
+    fit_null_discrete = function(...) stop("injected discrete failure"),
+    fit_null = function(...) stop("stop after fallback")
+  )
+  expect_message(
+    suppressWarnings(without_try_output(score_test(
+      B = fit$B, Y = fit$Y_augmented, X = X, X_cup = X_cup_from_X_fast(X, J),
+      k_constr = 2, j_constr = 1, j_ref = J, ntries = 1,
+      constraint_fn = c_fn, constraint_grad_fn = c_grad
+    ))),
+    "Discrete algorithm for estimation under the null hypothesis failed"
+  )
+})
+
 # test_that("simple negative binomial example fits reasonably fast and returns reasonable output", {
 #   
 #   set.seed(343234)

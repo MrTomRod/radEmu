@@ -261,10 +261,10 @@ score_test <- function(
         accept_try <- TRUE
         good_enough_fit <- TRUE
       } else {
-        message("Constraint sandwich algorithm for estimation under the null hypothesis did not converge. Trying again with augmented Lagrangian algorithm.")
+        message("Discrete algorithm for estimation under the null hypothesis did not converge. Trying again with augmented Lagrangian algorithm.")
       }
     } else {
-      message("Constraint sandwich algorithm for estimation under the null hypothesis failed. Trying again with augmented Lagrangian algorithm.")
+      message("Discrete algorithm for estimation under the null hypothesis failed. Trying again with augmented Lagrangian algorithm.")
     }
   }
   
