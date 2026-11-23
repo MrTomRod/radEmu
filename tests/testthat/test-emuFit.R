@@ -76,6 +76,37 @@ test_that("emuFit takes formulas and actually fits a model", {
   
 })
 
+test_that("emuFit returns Wald p-values when compute_cis = FALSE and return_wald_p = TRUE", {
+  expect_silent({
+    fit_nocis <- emuFit(Y = Y,
+                        X = X,
+                        formula = ~group,
+                        data = covariates,
+                        verbose = FALSE,
+                        tolerance = 0.01,
+                        return_wald_p = TRUE,
+                        compute_cis = FALSE,
+                        run_score_tests = FALSE)
+  })
+  
+  fit_cis <- emuFit(Y = Y,
+                    X = X,
+                    formula = ~group,
+                    data = covariates,
+                    verbose = FALSE,
+                    tolerance = 0.01,
+                    return_wald_p = TRUE,
+                    compute_cis = TRUE,
+                    run_score_tests = FALSE)
+  
+  expect_true("wald_p" %in% names(fit_nocis$coef))
+  expect_true(all(!is.na(fit_nocis$coef$wald_p)))
+  expect_true(all(fit_nocis$coef$wald_p > 0 & fit_nocis$coef$wald_p < 1))
+  expect_equal(fit_nocis$coef$wald_p, fit_cis$coef$wald_p)
+  expect_true(all(is.na(fit_nocis$coef$lower)))
+  expect_true(all(is.na(fit_nocis$coef$upper)))
+})
+
 test_that("cluster argument returns same estimates but different p-values",{
   expect_silent({
     fitted_model_cluster <- emuFit(Y = Y,
