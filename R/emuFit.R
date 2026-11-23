@@ -301,6 +301,7 @@ emuFit <- function(Y,
                      constraint_fn = constraint_fn,
                      maxit = maxit,
                      max_stepsize = control$max_step,
+                     max_abs_B = max_abs_B,
                      tolerance = tolerance,
                      j_ref = j_ref,
                      verbose = (verbose == "development"))

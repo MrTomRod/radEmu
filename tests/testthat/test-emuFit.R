@@ -728,3 +728,43 @@ describe("row name matches & mismatches between X and Y", {
     })
   })
 })
+
+test_that("unpenalized emuFit forwards max_abs_B and warns near the boundary", {
+  set.seed(1)
+  n_sep <- 10
+  J_sep <- 6
+  X_sep <- cbind(intercept = 1, group = rep(0:1, each = n_sep / 2))
+  Y_sep <- matrix(rpois(n_sep * J_sep, 20), n_sep, J_sep) + 1
+  Y_sep[6:10, 1] <- 0
+  rownames(X_sep) <- rownames(Y_sep) <- paste0("s", seq_len(n_sep))
+
+  # Custom max_abs_B = 10 is respected (not silently overridden by emuFit_micro's 50)
+  expect_warning(
+    fit_10 <- emuFit(Y = Y_sep, X = X_sep, penalize = FALSE, max_abs_B = 10,
+                     run_score_tests = FALSE, compute_cis = FALSE),
+    "within 10% of your `max_abs_B` boundary",
+    fixed = TRUE
+  )
+  expect_true(max(abs(fit_10$B)) >= 0.9 * 10)
+  expect_true(max(abs(fit_10$B)) < 20)
+
+  # Default max_abs_B = 250 reaches the boundary and triggers the warning on separated ZINB data
+  set.seed(42)
+  X_z <- cbind(intercept = 1, group = rep(0:1, each = 5))
+  b0_z <- radEmu:::get_sim_bs(20)$b0
+  b1_z <- rep(0, 20)
+  b1_z[18] <- 2.5
+  b1_z[3] <- -2.5
+  Y_z <- radEmu:::simulate_data(n = 10, J = 20, X = X_z, b0 = b0_z, b1 = b1_z,
+                                distn = "ZINB", zinb_size = 5, zinb_zero_prop = 0.6,
+                                mean_z = 5)
+  Y_z <- Y_z[, colSums(Y_z) > 0]
+  rownames(X_z) <- rownames(Y_z) <- paste0("s", seq_len(nrow(Y_z)))
+  expect_warning(
+    fit_250 <- emuFit(Y = Y_z, X = X_z, penalize = FALSE,
+                      run_score_tests = FALSE, compute_cis = FALSE),
+    "within 10% of your `max_abs_B` boundary",
+    fixed = TRUE
+  )
+  expect_true(max(abs(fit_250$B)) >= 0.9 * 250)
+})
