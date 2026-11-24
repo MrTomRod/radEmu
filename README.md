@@ -5,6 +5,7 @@ I am Thomas Roder; I work 30% as a bioinformatics analyst at the University of B
 | Note | Summary | Tag |
 |---|---|---|
 | [subset-constraint-discrete-design](subset-constraint-discrete-design.md) | On discrete (e.g. two-group) designs, a subset pseudo-Huber constraint silently tests the all-taxa median instead. | bug |
+| [subset-null-offset](subset-null-offset.md) | `fit_null_symmetric_subset` drops an offset, so subset null fits (incl. fastEmu score tests) step downhill and never converge tightly. Fix on a fork branch. | bug |
 | [wald-without-cis-crash](wald-without-cis-crash.md) | `emuFit(compute_cis = FALSE, return_wald_p = TRUE)` crashes because `X_cup` is `NULL`; always crashes in `fastEmuFit`. | bug |
 | [fastemu-single-ref-bug](fastemu-single-ref-bug.md) | `fastEmuFit` rejects valid single-reference calls due to `length(ref_set > 1)` (plus two adjacent validation typos). | bug |
 | [singular-information](singular-information.md) | Without the Firth penalty, a taxon absent from a group makes the information singular: the score test's ridge shifts the statistic, Wald stops. Patch on a fork branch. | bug |
