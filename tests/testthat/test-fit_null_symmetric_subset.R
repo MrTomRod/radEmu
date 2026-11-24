@@ -49,6 +49,82 @@ test_that("we can choose null fit algorithm argument, subset", {
   expect_false(fit1$coef$score_stat[5] == fit2$coef$score_stat[5])
 })
 
+test_that("fit_null_symmetric_subset converges monotonically with tight tolerances when j_constr is outside reference_set", {
+  set.seed(101)
+  n_sim <- 35
+  J_sim <- 60
+  rs <- 1:20
+  X_sim <- cbind(1, seq(0, 1, length.out = n_sim))
+  b0_sim <- rnorm(J_sim, 0, 1)
+  b0_sim <- b0_sim - mean(b0_sim)
+  b1_sim <- rnorm(J_sim, 0, 0.5)
+  b1_sim[J_sim] <- 1.2
+  b1_sim <- b1_sim - mean(b1_sim)
+  Y_sim <- radEmu:::simulate_data(
+    n = n_sim,
+    J = J_sim,
+    X = X_sim,
+    b0 = b0_sim,
+    b1 = b1_sim,
+    distn = "Poisson",
+    mean_z = 2.5
+  )
+
+  cf_sim <- lapply(1:2, function(k) {
+    f_out <- function(x) pseudohuber_median(x[rs])
+    attr(f_out, "reference_set") <- rs
+    f_out
+  })
+  cg_sim <- lapply(1:2, function(k) {
+    function(x) {
+      grad <- rep(0, length(x))
+      grad[rs] <- dpseudohuber_median_dx(x[rs])
+      grad
+    }
+  })
+
+  fit_unc <- suppressMessages(emuFit(
+    X = X_sim, Y = Y_sim, run_score_tests = FALSE, compute_cis = FALSE,
+    tolerance = 1e-5, match_row_names = FALSE,
+    constraint_fn = cf_sim, constraint_grad_fn = cg_sim
+  ))
+
+  msgs <- character(0)
+  fit_cs <- withCallingHandlers(
+    emuFit(
+      X = X_sim, Y = Y_sim, fitted_model = fit_unc, refit = FALSE,
+      compute_cis = FALSE, test_kj = data.frame(k = 2, j = J_sim),
+      null_fit_alg = "constraint_sandwich",
+      tol_lik = 1e-8, tol_test_stat = 1e-4, maxit_null = 150,
+      match_row_names = FALSE,
+      constraint_fn = cf_sim, constraint_grad_fn = cg_sim,
+      null_diagnostic_plots = TRUE
+    ),
+    message = function(m) {
+      msgs <<- c(msgs, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+
+  diag_df <- fit_cs$null_diagnostic_plots[[1]]$diagnostics_df
+  expect_false(any(grepl("did not converge", msgs, fixed = TRUE)))
+  expect_false("constraint_diff" %in% names(diag_df))
+  expect_true(all(diff(diag_df$lik) >= -1e-8))
+
+  fit_al <- suppressMessages(emuFit(
+    X = X_sim, Y = Y_sim, fitted_model = fit_unc, refit = FALSE,
+    compute_cis = FALSE, test_kj = data.frame(k = 2, j = J_sim),
+    null_fit_alg = "augmented_lagrangian",
+    match_row_names = FALSE,
+    constraint_fn = cf_sim, constraint_grad_fn = cg_sim
+  ))
+  expect_equal(
+    fit_cs$coef$score_stat[J_sim],
+    fit_al$coef$score_stat[J_sim],
+    tolerance = 1e-2
+  )
+})
+
 test_that("can run without errors", {
   
   skip("takes too long in automated testing")
