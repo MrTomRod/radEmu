@@ -546,12 +546,13 @@ fit_null_symmetric_subset <- function(
       } else {
         
         # for constrained taxon, update with same approach as in emuFit_micro for 
-        # unconstrained parameters
+        # unconstrained parameters, holding the constrained entry as a fixed offset
+        z_offset <- z + as.numeric(X[, k_constr] * B[k_constr, j_left])
         update <- micro_fisher(
-          X[, -k_constr],
+          X[, -k_constr, drop = FALSE],
           Yj = Y[, j_left, drop = FALSE],
           Bj = B[-k_constr, j_left, drop = FALSE],
-          z,
+          z = z_offset,
           stepsize = max_step,
           c1 = c1
         )
